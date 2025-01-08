@@ -38,8 +38,8 @@ Please provide answers to these questions using markdown notation and place them
     https://github.com/Davidarduinoclone/CS_283/tree/main
 
 
-4. Briefly describe what you want to get out of this class.
+4. Briefly describe what you want to get out of this class.   
 A better understanding of what goes on behind the terminal. A better understanding of linux. 
 
-5. Briefly describe any concerns you might be having with being successful in this class (if any).
+5. Briefly describe any concerns you might be having with being successful in this class (if any).   
 The quizzes are a concern for me because I do not do well on exams because I get stressed out. 
