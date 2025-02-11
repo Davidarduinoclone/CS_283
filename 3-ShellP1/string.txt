@@ -1,0 +1,43 @@
+compressed_dragon = b"eNrdlNENwjAMROey5xrAHJNEuBCAvWIh0ApO/yzYaUHlqXAjYOQbyOEwwWZLs+5qSOOzz+c9AhKTsrySYl3FCUBmRF/AGLLP8CxSGWmFpOlJTi4sKOxfM/5yem7uA1yVlu0gjUKERrX7d9rHiaAOn4s5+/yz7gKc+QG4rtD1WjWxU9zBfpBz4Bg8BGv1Elg9I+QIwOoyRUkwy+nFX+5pFVlXYswZQeHj1w/NbwBY+mvQ"
+
+
+
+}
+        
+        else if (strcmp(cmd_buff, EXIT_CMD) == 0 ){
+            free(cmd_buff); 
+            exit(0);
+        }
+        else if(strcmp(cmd_buff, "dragon") == 0 ){
+            unsigned long uncompressed_length = 5000;
+            unsigned char uncompressed_dragon[uncompressed_length];
+            uncompress(uncompressed_dragon, &uncompressed_length, compressed_dragon, compressed_dragon_length);
+            printf("%s\n", uncompressed_dragon);
+
+
+
+
+
+
+
+//char *exec = strtok(token, " ");
+        char *exec = strtok_r(token," ", &end_token);
+        //printf(" %s \n", exec);
+
+        
+        if (exec == NULL ||strlen(exec) >= EXE_MAX) {
+            return ERR_CMD_OR_ARGS_TOO_BIG;
+        }
+        strcpy(clist->commands[clist->num - 1].exe, exec);
+        exec = strtok_r(NULL," ", &end_token);
+        strcpy(clist->commands[clist->num - 1].args, "");
+        if(exec != NULL){
+            
+            //printf(" %s \n", exec);
+            if (strlen(exec) >= ARG_MAX) {
+                return ERR_CMD_OR_ARGS_TOO_BIG;
+            }
+            strcpy(clist->commands[clist->num - 1].args, exec);
+            
+          
+        }
