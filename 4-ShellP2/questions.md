@@ -20,7 +20,7 @@
 
 6. Describe how your implementation of build_cmd_buff() handles quoted arguments. Why is this necessary?
 
-    > **Answer**:  It handles quote by using a bool called in_quote_mode. This is neccessary because when that boolean is true the program does not remove the extra white space that are inside teh quotes. 
+    > **Answer**:  It handles quote by using a bool called in_quote_mode. This is neccessary because when that boolean is true the program does not remove the extra white space that are inside the quotes. 
 
 7. What changes did you make to your parsing logic compared to the previous assignment? Were there any unexpected challenges in refactoring your old code?
 
