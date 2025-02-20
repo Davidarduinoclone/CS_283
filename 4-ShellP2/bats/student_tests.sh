@@ -26,4 +26,57 @@ EOF
     [ "$stripped_output" = "$expected_output" ]
 }
 
+@test "Command not found in PATH and check return code" {
+    run "./dsh" <<EOF
+not_exists
+rc
+EOF
+
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+    expected_output="dsh2>dsh2>CommandnotfoundinPATHdsh2>2dsh2>cmdloopreturned0"
+
+    echo "Captured stdout:"
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+
+    [ "$stripped_output" = "$expected_output" ]
+    [ "$status" -eq 0 ]
+}
+
+@test "Command not found in PATH without rc" {
+    run "./dsh" <<EOF
+not_exists
+EOF
+
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+    expected_output="dsh2>dsh2>CommandnotfoundinPATHdsh2>cmdloopreturned0"
+
+    echo "Captured stdout:"
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+
+    [ "$stripped_output" = "$expected_output" ]
+    [ "$status" -eq 0 ]
+}
+
+@test "Echo command and check return code" {
+    run "./dsh" <<EOF
+echo "hello"
+rc
+EOF
+
+    stripped_output=$(echo "$output" | tr -d '\t\n\r\f\v'| tr -d '[:space:]')
+    expected_output="hellodsh2>dsh2>0dsh2>cmdloopreturned0"
+
+    echo "Captured stdout:"
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+
+    [ "$stripped_output" = "$expected_output" ]
+    [ "$status" -eq 0 ]
+}
+
 

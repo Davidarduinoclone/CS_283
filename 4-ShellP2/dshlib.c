@@ -7,32 +7,38 @@
 #include <fcntl.h>
 #include <sys/wait.h>
 #include "dshlib.h"
+#include <errno.h>
 
 
-int build_cmd_list(char *cmd_line, cmd_buff_t *cmd_buff)
+int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff)
 {
     char *token;
     char *cmd = malloc(SH_CMD_MAX);
     char *md = malloc(SH_CMD_MAX);
-    int number = 0;
+    //int number = 0;
     token = cmd_line;
-    //remove white space 
-    // remove leading white space 
+    
+
+    // removes leading white space 
     while (isspace((unsigned char)*token)) {
         token++;
     }
-    // remove tailing white space 
+    
+    // removes trailing white space 
     cmd = token + strlen(token) - 1;
     while (cmd > token && isspace((unsigned char)*cmd)) {
         cmd--;
     }
     cmd[1] = '\0';
     
+    // removes all the extra white space betweeen the commands but not in quotes
     bool in_quote_mode = false;
     bool in_black_mode = false; 
     int index = 0; 
     for (size_t i =0; i < strlen(token); i++ ){
+        
         if (in_quote_mode){
+            // end of a quote
             if(token[i] == '"'){
                 in_quote_mode = !in_quote_mode;
                 md[index] = token[i];
@@ -45,17 +51,20 @@ int build_cmd_list(char *cmd_line, cmd_buff_t *cmd_buff)
             }
             
         }else{
+            // checks for quotes
             if(token[i] == '"'){
                 in_quote_mode = !in_quote_mode;
                 md[index] = token[i];
                 index += 1; 
             }else {
+                // checks for black space 
                 if (token[i] == SPACE_CHAR){
                     if (!in_black_mode){
                         in_black_mode = true; 
                         md[index] = ' ';
                         index += 1; 
-                    }           
+                    }          
+                // check for non black space 
                 }else{
                     in_black_mode = false;
                     md[index] = token[i];
@@ -65,8 +74,7 @@ int build_cmd_list(char *cmd_line, cmd_buff_t *cmd_buff)
         }
     }
    
-    //printf("%s\n", md);
-
+    // copy the string into _cmd_buffer
     cmd_buff->_cmd_buffer = malloc(SH_CMD_MAX);
     strcpy(cmd_buff->_cmd_buffer, md);
 
@@ -76,13 +84,17 @@ int build_cmd_list(char *cmd_line, cmd_buff_t *cmd_buff)
     bool just_exit = false;
     cmd_buff->argc = 0;
     
+
+    // copys the args from _cmd_buffer 
     for (size_t i = 0; i < strlen(md); i++){
         if (in_quote_mode){
+            // end of a quote 
             if(md[i] == '"'){
                 in_quote_mode = !in_quote_mode;
+                // copy to arg 
                 cmd_buff->argv[cmd_buff->argc] = malloc(SH_CMD_MAX);
                 strncpy(cmd_buff->argv[cmd_buff->argc], md+start+1, i-start-1);
-                //cmd_buff->argv[cmd_buff->argc][i-start] = '\0';
+                
                 start = i + 1;
                 cmd_buff->argc += 1;
                 in_black_mode = false;
@@ -101,7 +113,7 @@ int build_cmd_list(char *cmd_line, cmd_buff_t *cmd_buff)
                     in_black_mode = true;
                     if (!just_exit){
 
-                        
+                        // copy to arg 
                         cmd_buff->argv[cmd_buff->argc] = malloc(SH_CMD_MAX);
                         strncpy(cmd_buff->argv[cmd_buff->argc], md+start, i-start);
                         cmd_buff->argv[cmd_buff->argc][i-start] = '\0';
@@ -115,6 +127,7 @@ int build_cmd_list(char *cmd_line, cmd_buff_t *cmd_buff)
             }
         }
     }
+    // last item in the string does to have a black space after it so we need to copy it here 
     if (in_black_mode || cmd_buff->argc == 0){
         cmd_buff->argv[cmd_buff->argc] = malloc(SH_CMD_MAX);
         strncpy(cmd_buff->argv[cmd_buff->argc], md+start, strlen(md)-start);
@@ -126,7 +139,7 @@ int build_cmd_list(char *cmd_line, cmd_buff_t *cmd_buff)
     
     
     return OK;
-    //return 1; 
+    
 }
 
 /*
@@ -175,10 +188,11 @@ int build_cmd_list(char *cmd_line, cmd_buff_t *cmd_buff)
 int exec_local_cmd_loop()
 {
     char *cmd_buff = malloc(SH_CMD_MAX);
-    int rc = 0;
+    //int rc = 0;
     cmd_buff_t cmd;
+    int last_return_code = 0;
 
-    // TODO IMPLEMENT MAIN LOOP
+    
 
     while(1){
         //cmd_buff_t cmd;
@@ -196,9 +210,9 @@ int exec_local_cmd_loop()
             printf(CMD_WARN_NO_CMD);
         }else{
             
-            return_code = build_cmd_list(cmd_buff, &cmd);
+            return_code = build_cmd_buff(cmd_buff, &cmd);
 
-
+            
             if (return_code == -2 ){
                 printf( CMD_ERR_PIPE_LIMIT , CMD_MAX);
             }else if (return_code == 0){
@@ -212,45 +226,52 @@ int exec_local_cmd_loop()
                     print_dragon();
 
                 }
-                else if (strcmp(cmd.argv[0], "cd") == 0){
-                    //printf("%d\n", cmd.argc);
-                    //printf("%s\n", cmd.argv[0]);
-                    
-                    if (cmd.argc == 2){
-                        
-                       
-                        chdir(cmd.argv[1]);
-                        //printf("%s\n", cmd.argv[0]);
+                // return the return code for the last command
+                else if (strcmp(cmd.argv[0], "rc") == 0 ) {
+                    printf("%d\n", last_return_code);
 
+                }
+                // runs cd 
+                else if (strcmp(cmd.argv[0], "cd") == 0){
+                    if (cmd.argc == 2){
+                        chdir(cmd.argv[1]);
                     }
                     
                 }else{
                     pid_t pid = fork();
                     if (pid == 0) {
                         
-                        
                         execvp(cmd.argv[0], cmd.argv);
-                      
+                        int err = errno;
+                        exit(err);
                         exit(EXIT_FAILURE);
                     } else if (pid > 0) {
-                        wait(NULL);
+                        int status;
+                        wait(&status);
+                        
+                        if (WIFEXITED(status)) {
+                            // gets the last return code 
+                            last_return_code = WEXITSTATUS(status);
+
+                            if (last_return_code != 0) {
+                                // if command not found
+                                if (last_return_code == ENOENT){
+                                    printf("Command not found in PATH\n");
+                                
+                                // another error 
+                                }else{
+                                    printf("Command execution failed with error code: %d\n", last_return_code);
+                                }
+                            }
+                        }
                     } else {
                         perror("fork failed");
                     }
                     
                    
                 }
-            }else if (return_code == 1){
-                printf("%s\n", cmd._cmd_buffer);
 
-                for (int i =0; i < cmd.argc ; i++){
-                    printf("%s\n", cmd.argv[i]);
-                }
-                if (cmd.argv[cmd.argc]== NULL){
-                    printf("the last is NULL\n");
-                }
-                printf("%d",strcmp(cmd.argv[0], "dragon"));
-
+       
             }
 
         
@@ -264,13 +285,6 @@ int exec_local_cmd_loop()
         
     }
 
-    // TODO IMPLEMENT parsing input to cmd_buff_t *cmd_buff
-
-    // TODO IMPLEMENT if built-in command, execute builtin logic for exit, cd (extra credit: dragon)
-    // the cd command should chdir to the provided directory; if no directory is provided, do nothing
-
-    // TODO IMPLEMENT if not built-in command, fork/exec as an external command
-    // for example, if the user input is "ls -l", you would fork/exec the command "ls" with the arg "-l"
-
+    
     return OK;
 }
