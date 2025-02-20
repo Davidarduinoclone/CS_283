@@ -12,7 +12,7 @@
 
 4. What is the purpose of calling wait() in the parent process after forking? What would happen if we didn’t call it?
 
-    > **Answer**:  Since fork created two independent process this means that both can be running at the same time. But if we want the child to execute and see what it has returned we use wait. 
+    > **Answer**:  Since fork created two independent process this means that both can be running at the same time. But if we want the child to execute and see what it has returned we use wait. If we did not use wait then we would not see want the child returned.
 
 5. In the referenced demo code we used WEXITSTATUS(). What information does this provide, and why is it important?
 
