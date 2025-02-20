@@ -24,7 +24,7 @@
 
 7. What changes did you make to your parsing logic compared to the previous assignment? Were there any unexpected challenges in refactoring your old code?
 
-    > **Answer**:  One  challenge that I faces was the change in the data type that we were using to store the command in. This caused me to change my build_cmd_list() into a build_cmd_buff(). Another challenge was to store all the things in the string into a the args. 
+    > **Answer**:  One  challenge that I faces was the change in the data type that we were using to store the command in. This caused me to change my build_cmd_list() into a build_cmd_buff(). Another challenge was to store all the things in the _cmd_buffer string into a the args. 
 
 8. For this quesiton, you need to do some research on Linux signals. You can use [this google search](https://www.google.com/search?q=Linux+signals+overview+site%3Aman7.org+OR+site%3Alinux.die.net+OR+site%3Atldp.org&oq=Linux+signals+overview+site%3Aman7.org+OR+site%3Alinux.die.net+OR+site%3Atldp.org&gs_lcrp=EgZjaHJvbWUyBggAEEUYOdIBBzc2MGowajeoAgCwAgA&sourceid=chrome&ie=UTF-8) to get started.
 
