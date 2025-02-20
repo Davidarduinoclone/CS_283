@@ -4,7 +4,7 @@
 
 2. What happens if the fork() system call fails? How does your implementation handle this scenario?
 
-    > **Answer**:  If the fork() system call fails, it returns -1. If the fork() system call fails I handle it by printing an error asking that "fork failed"
+    > **Answer**:  If the fork() system call fails, it returns -1 and does not creat a child process. If the fork() system call fails I handle it by printing an error asking that "fork failed"
 
 3. How does execvp() find the command to execute? What system environment variable plays a role in this process?
 
