@@ -6,11 +6,10 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/wait.h>
-
 #include "dshlib.h"
 #include <errno.h>
 
-
+void print_dragon();
 
 int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff)
 {
@@ -20,7 +19,6 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff)
     //int number = 0;
     token = cmd_line;
     
-
     // removes leading white space 
     while (isspace((unsigned char)*token)) {
         token++;
@@ -85,7 +83,6 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff)
     in_black_mode = false;
     bool just_exit = false;
     cmd_buff->argc = 0;
-    
 
     // copys the args from _cmd_buffer 
     for (size_t i = 0; i < strlen(md); i++){
@@ -96,16 +93,13 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff)
                 // copy to arg 
                 cmd_buff->argv[cmd_buff->argc] = malloc(SH_CMD_MAX);
                 strncpy(cmd_buff->argv[cmd_buff->argc], md+start+1, i-start-1);
-                
                 start = i + 1;
                 cmd_buff->argc += 1;
                 in_black_mode = false;
                 just_exit = true;
 
-            }else{
-              
             }
-            
+    
         }else{
             if(md[i] == '"'){
                 in_quote_mode = !in_quote_mode;
@@ -149,20 +143,27 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
 {
     char *token;
     char *cmd;
+    char *prev_pos = malloc(strlen(cmd_line) + 1);
+    strcpy(prev_pos, cmd_line);
+    int index = 0; 
   
     clist->num = 0;
     if (strlen(cmd_line) >= SH_CMD_MAX) {
         return ERR_CMD_OR_ARGS_TOO_BIG;
     }
 
-    token = strtok(cmd_line, PIPE_STRING);
+    token = strtok(cmd_line, "|");
     //token = strtok_r(cmd_line,PIPE_STRING, &end_str);
     while (token != NULL){
+        int lead = 0;
         clist->num += 1; 
+        
         
         // remove leading white space 
         while (isspace((unsigned char)*token)) {
             token++;
+            lead++;
+            
         }
         // remove tailing white space 
         cmd = token + strlen(token) - 1;
@@ -172,16 +173,23 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
         if (clist->num > CMD_MAX) {
             return ERR_TOO_MANY_COMMANDS;
         }
-
-        build_cmd_buff(token, &clist->commands[ clist->num -1]);
-
-
-        
             
-  
-     
-        token = strtok(NULL, PIPE_STRING );
-        //token = strtok_r(NULL,PIPE_STRING, &end_str);
+        build_cmd_buff(token, &clist->commands[ clist->num -1]);
+        clist->commands->split = ' ';
+        if (index != 0){
+            clist->commands[ clist->num -1].split = prev_pos[index];
+            
+            index++;
+        }
+        index = index + strlen(token) + lead;
+        char temp = prev_pos[index] ;
+        while (isspace((unsigned char)*&temp)){
+            index = index + 1;
+            temp = prev_pos[index];
+
+        }
+        token = strtok(NULL, "|" );
+      
 
     }
     return OK;
@@ -189,64 +197,60 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
 }
 
 int execute_pipeline(command_list_t *clist) {
-    int pipe_fds[CMD_MAX][2]; // File descriptors for pipes
-    pid_t pids[CMD_MAX];      // Track child PIDs
-
-    for (int i = 0; i < clist->num; i++) {
-        // Create a pipe (except for the last command)
-        if (i < clist->num - 1) {
-            if (pipe(pipe_fds[i]) < 0) {
-                perror("pipe");
-                return ERR_MEMORY;
-            }
-        }
-
-        // Fork a child process
-        pids[i] = fork();
-        if (pids[i] < 0) {
-            perror("fork");
-            return ERR_MEMORY;
-        }
-
-        if (pids[i] == 0) {
-            // CHILD PROCESS
-            // Redirect input if not the first command
-            if (i > 0) {
-                dup2(pipe_fds[i-1][0], STDIN_FILENO);
-            }
-
-            // Redirect output if not the last command
-            if (i < clist->num - 1) {
-                dup2(pipe_fds[i][1], STDOUT_FILENO);
-            }
-
-            // Close all pipe ends
-            for (int j = 0; j < clist->num - 1; j++) {
-                close(pipe_fds[j][0]);
-                close(pipe_fds[j][1]);
-            }
-
-            // Execute command
-            cmd_buff_t *cmd_buff = &clist->commands[i];
-            execvp(cmd_buff->argv[0], cmd_buff->argv);
-            perror("execvp"); // If execvp fails
-            exit(ERR_EXEC_CMD);
+        int pipes[clist->num - 1][2]; // File descriptors for pipes
+        pid_t pids[clist->num];      // Track child PIDs
+      
+        // Create all necessary pipes
+    for (int i = 0; i < clist->num - 1; i++) {
+        if (pipe(pipes[i]) == -1) {
+            perror("pipe");
+            exit(EXIT_FAILURE);
         }
     }
 
-    // PARENT PROCESS
-    // Close all pipe ends in the parent
+    // Create processes for each command
+    for (int i = 0; i < clist->num; i++) {
+        pids[i] = fork();
+        if (pids[i] == -1) {
+            perror("fork");
+            exit(EXIT_FAILURE);
+        }
+
+        if (pids[i] == 0) {  // Child process
+            // Set up input pipe for all except first process
+            if (i > 0) {
+                dup2(pipes[i-1][0], STDIN_FILENO);
+            }
+
+            // Set up output pipe for all except last process
+            if (i < clist->num - 1) {
+                dup2(pipes[i][1], STDOUT_FILENO);
+            }
+
+            // Close all pipe ends in child
+            for (int j = 0; j < clist->num - 1; j++) {
+                close(pipes[j][0]);
+                close(pipes[j][1]);
+            }
+
+            // Execute command
+            
+            execvp(clist->commands[i].argv[0], clist->commands[i].argv);
+            perror("execvp");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    // Parent process: close all pipe ends
     for (int i = 0; i < clist->num - 1; i++) {
-        close(pipe_fds[i][0]);
-        close(pipe_fds[i][1]);
+        close(pipes[i][0]);
+        close(pipes[i][1]);
     }
 
     // Wait for all children
     for (int i = 0; i < clist->num; i++) {
-        int status;
-        waitpid(pids[i], &status, 0);
+        waitpid(pids[i], NULL, 0);
     }
-
     return OK;
 }
 
@@ -297,14 +301,10 @@ int execute_pipeline(command_list_t *clist) {
  */
 int exec_local_cmd_loop()
 {
-   
     char *cmd_buff = malloc(SH_CMD_MAX);
     //int rc = 0;
-    cmd_buff_t cmd;
-    command_list_t command;
-    int last_return_code = 0;
-
     
+    command_list_t command;
 
     while(1){
         //cmd_buff_t cmd;
@@ -322,73 +322,50 @@ int exec_local_cmd_loop()
             printf(CMD_WARN_NO_CMD);
         }else{
             
-            //return_code = build_cmd_buff(cmd_buff, &cmd);
-            return_code = build_cmd_list(cmd_buff, &command );
+            return_code = build_cmd_list(cmd_buff, &command);
 
             
             if (return_code == -2 ){
                 printf( CMD_ERR_PIPE_LIMIT , CMD_MAX);
             }else if (return_code == 0){
-                //printf("this is the numnber %d" ,command.num);
-                
-                cmd = command.commands[0];
-                //printf("this is the command %s", cmd.argv[0]);
                 // exit 
-                if (strcmp(cmd.argv[0], EXIT_CMD) == 0 ) {
+                if (strcmp(command.commands[0].argv[0], EXIT_CMD) == 0 ) {
                     free(cmd_buff); 
-                    exit(0);
+                    printf("exiting");
+                    return OK;
                 }
-                    //dragon
-                else if (strcmp(cmd.argv[0], "dragon") == 0 ) {
+                //dragon
+                else if (strcmp(command.commands[0].argv[0], "dragon") == 0 ) {
                     print_dragon();
 
                 }
-                // return the return code for the last command
-                else if (strcmp(cmd.argv[0], "rc") == 0 ) {
-                    printf("%d\n", last_return_code);
+                
+                // runs cd 
+                else if (strcmp(command.commands[0].argv[0], "cd") == 0){
 
-                }
-                    // runs cd 
-                else if (strcmp(cmd.argv[0], "cd") == 0){
-                    if (cmd.argc == 2){
-                        chdir(cmd.argv[1]);
+                    if (command.num >= 1){
+
+                        chdir(command.commands[0].argv[1]);
                     }
                     
                 }else{
-                    pid_t pid = fork();
-                    if (pid == 0) {
-                        
-                        execvp(cmd.argv[0], cmd.argv);
-                        int err = errno;
-                        exit(err);
+                    pid_t supervisor = fork();
+                    if (supervisor == -1) {
+                        perror("fork supervisor");
                         exit(EXIT_FAILURE);
-                    } else if (pid > 0) {
-                        int status;
-                        wait(&status);
-                        
-                        if (WIFEXITED(status)) {
-                        // gets the last return code 
-                            last_return_code = WEXITSTATUS(status);
-                            if (last_return_code != 0) {
-                                    // if command not found
-                                if (last_return_code == ENOENT){
-                                    printf("Command not found in PATH\n");
-                                    
-                                    // another error 
-                                }else{
-                                    printf("Command execution failed with error code: %d\n", last_return_code);
-                                }
-                            }
-                        }
-                    } else {
-                        perror("fork failed");
                     }
-                        
-                    
+
+                    if (supervisor == 0) {  // Supervisor process
+                        execute_pipeline(&command);
+                        exit(EXIT_SUCCESS);
+                    }
+
+                    // Main parent just waits for supervisor
+                    waitpid(supervisor, NULL, 0);
+                   
                 }
 
        
-                
             }
 
         

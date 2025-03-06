@@ -18,6 +18,8 @@ typedef struct command
 
 typedef struct cmd_buff
 {
+    // this is were we save what the buffer is a command: c read_file: r write_file: w
+    char split; 
     int  argc;
     char *argv[CMD_ARGV_MAX];
     char *_cmd_buffer;
