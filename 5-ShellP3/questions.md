@@ -12,4 +12,4 @@ The reason that cd is a bulit in command is because then it would be the child p
 
 4. Currently, your shell supports a fixed number of piped commands (CMD_MAX). How would you modify your implementation to allow an arbitrary number of piped commands while still handling memory allocation efficiently? What trade-offs would you need to consider?
 
-I would modify my implementation to allow for an arbitrary number of piped commands while still handling memory allocation efficiently by using a linked list. The trade offs would be that I can could go to a specific index any more. 
+I would modify my implementation to allow for an arbitrary number of piped commands while still handling memory allocation efficiently by using a linked list. The trade offs would be that I can could go to a specific index any more. Also it will be hard to travel a linked list then it is a regular array. 
