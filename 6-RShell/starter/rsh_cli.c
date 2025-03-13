@@ -136,6 +136,7 @@ int exec_remote_cmd_loop(char *address, int port)
             if (strncmp(cmd_buff, "exit", 4) == 0 || strncmp(cmd_buff, "stop-server", 11) == 0) {
                 send(cli_socket, cmd_buff, strlen(cmd_buff), 0); 
                 send(cli_socket, &RDSH_EOF_CHAR, (int)sizeof(RDSH_EOF_CHAR), 0);
+                printf("exiting");
                 break;
             }
             

@@ -344,11 +344,16 @@ int exec_client_requests(int cli_socket) {
             free(io_buff);
             return OK_EXIT;
         }
+        if (strcmp(cmd_list.commands[0].argv[0], "cd") == 0) {
+            if (cmd_list.num >= 1){
+                chdir(cmd_list.commands[0].argv[1]);
+            }
+            
+        }else{
 
-
-        cmd_rc = rsh_execute_pipeline(cli_socket, &cmd_list);
+            cmd_rc = rsh_execute_pipeline(cli_socket, &cmd_list);
       
-
+        }
         
         // TODO send appropriate respones with send_message_string
         // - error constants for failures
