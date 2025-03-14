@@ -300,11 +300,12 @@
                      return OK;
                  }
                  //dragon
+                 /*
                  else if (strcmp(command.commands[0].argv[0], "dragon") == 0 ) {
                      print_dragon();
  
                  }
-                 
+                 */
                  // runs cd 
                  else if (strcmp(command.commands[0].argv[0], "cd") == 0){
  

@@ -96,16 +96,16 @@ int exec_remote_cmd_loop(char *address, int port)
     char *rsp_buff;
     int cli_socket;
     ssize_t io_size;
-    int is_eof;
+    //int is_eof;
 
     // TODO set up cmd and response buffs
     cmd_buff = malloc(RDSH_COMM_BUFF_SZ);
     if ( cmd_buff == NULL){
-        return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_MEMORY);
+        return ERR_MEMORY;
     }
     rsp_buff = malloc(RDSH_COMM_BUFF_SZ);
     if ( rsp_buff == NULL){
-        return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_MEMORY);
+        return ERR_MEMORY;
     }
     
 
@@ -120,7 +120,7 @@ int exec_remote_cmd_loop(char *address, int port)
         // TODO print prompt
 
         // TODO fgets input
-        int return_code;
+        //int return_code;
          printf("%s", SH_PROMPT);
         if (fgets(cmd_buff, ARG_MAX, stdin) == NULL){
              printf("\n");

@@ -283,10 +283,10 @@ int exec_client_requests(int cli_socket) {
     int io_size =0;
     command_list_t cmd_list;
     int rc;
-    int cmd_rc;
-    int last_rc;
+    int cmd_rc = 0;
+    int last_rc =0 ;
     char *io_buff;
-    int ret;
+
     /*
     io_buff = malloc(RDSH_COMM_BUFF_SZ);
     if (io_buff == NULL){
@@ -320,7 +320,7 @@ int exec_client_requests(int cli_socket) {
         }
         // TODO build up a cmd_list
         
-        ret = build_cmd_list(io_buff, &cmd_list);
+        build_cmd_list(io_buff, &cmd_list);
         /*
         for (int i = 0; i < cmd_list.num; i++) {
             for (int j = 0; j < cmd_list.commands[i].argc; j++) {
@@ -349,7 +349,10 @@ int exec_client_requests(int cli_socket) {
                 chdir(cmd_list.commands[0].argv[1]);
             }
             
-        }else{
+        }
+        
+       
+        else{
 
             cmd_rc = rsh_execute_pipeline(cli_socket, &cmd_list);
       
@@ -367,6 +370,7 @@ int exec_client_requests(int cli_socket) {
         // TODO send_message_eof when done
         send_message_eof(cli_socket);
         free(io_buff);
+        last_rc = cmd_rc;
         
     }
     //free(io_buff);
